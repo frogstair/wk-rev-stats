@@ -10,27 +10,53 @@
 // @grant        none
 // ==/UserScript==
 
-var stats = {
-  total_done: 0,
-  total_kanji: 0,
-  total_vocabulary: 0,
-  total_radicals: 0,
-  total_readings: 0,
-  total_translations: 0,
-  correct_kanji: 0,
-  correct_vocabulary: 0,
-  correct_radicals: 0,
-  correct_readings: 0,
-  correct_meanings: 0,
+var incorrect = {
+  radicals: {},
+  kanji: {},
+  vocabulary: {},
 };
 
-var itemcompleted = false;
+var stats = {
+  total_done: 0,
+  total_correct: 0,
+
+  total_readings: 0,
+  correct_readings: 0,
+
+  total_meanings: 0,
+  correct_meanings: 0,
+
+  total_kanji: 0,
+  total_kanji_m: 0,
+  total_kanji_r: 0,
+  correct_kanji_m: 0,
+  correct_kanji_r: 0,
+
+  total_vocab: 0,
+  total_vocab_m: 0,
+  total_vocab_r: 0,
+  correct_vocab_m: 0,
+  correct_vocab_r: 0,
+
+  total_radicals: 0,
+  correct_radicals: 0,
+};
+
 var ready = false;
 var loader = document.getElementById("loading");
+var answered = false;
 
-var obs = new MutationObserver((ml, observer) => {
-  ml.forEach((mutation) => {
-    if (mutation.attributeName) {
+function sleep(ms) {
+  const dt = Date.now();
+  let cd = null;
+  do {
+    cd = Date.now();
+  } while (cd - dt < ms);
+}
+
+var obs = new MutationObserver((ml) => {
+  ml.forEach((m) => {
+    if (m.attributeName) {
       attach();
     }
   });
@@ -58,9 +84,157 @@ function attach() {
 }
 
 function lesson_complete() {
+  if (!window.sessionStorage.getItem("statsscript")) {
+    return;
+  }
   stats = JSON.parse(window.sessionStorage.getItem("statsscript"));
-  console.log("You are done, congratulations! Here are your stats");
-  console.log(stats);
+  console.log("Done with review");
+  var l = document.getElementById("reviews-summary");
+
+  $("head").append(
+    $(`<style>
+    info_icon {
+      margin-left: -0.1em;
+      margin-right: 0.2em;
+    }
+
+    div.progress_bg {
+      margin-top: 5px;
+      background-color: #e0e0e0;
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    div.progress_fg {
+      background-color: #08c66c;
+      width: 50%;
+      border-radius: inherit;
+    }
+
+    h4 {
+      margin: 0.3em !important;
+      color: #a2a2a2;
+      font-weight: 800;
+      line-height: 1em;
+    }
+
+    h3.table-head {
+      margin: 0.3em !important;
+    }
+  </style>`)
+  );
+
+  var table = $(`<div id="statistics" class="pure-g-r">
+  <div id="correct" class="pure-u-1 progress-entry" style="display: block">
+    <h2 style="background-color: #0098e4 !important">
+      <b>
+        <i class="info_icon icon-foo">&#xF05A;</i>
+      </b>
+      Statistics
+    </h2>
+    <div class="master active">
+      <h3>
+        <span>Total answered: <strong id="ta"></strong></span>
+      </h3>
+      <h3>
+        <span>Total correct: <strong id="tc"></strong></span>
+      </h3>
+      <table style="width: 100%; text-align: center; table-layout: fixed">
+        <tr>
+          <th class="tr">
+            <h3 class="table-head">Radicals</h3>
+          </th>
+          <th class="tk">
+            <h3 class="table-head">Kanji</h3>
+          </th>
+          <th class="tv">
+            <h3 class="table-head">Vocabulary</h3>
+          </th>
+        </tr>
+        <tr>
+          <td class="tr" style="padding: -100px 5px 0px 5px">
+            <span style="color: #a2a2a2" id="radical_count">0 / 0</span>
+            <div class="progress_bg">
+              <div id="rsl" class="progress_fg">&nbsp;</div>
+            </div>
+          </td>
+          <td class="tk" style="padding: 5px">
+            <h4>Meanings</h4>
+            <span style="color: #a2a2a2" id="kanji_m_count">0 / 0</span>
+            <div class="progress_bg">
+              <div id="kmsl" class="progress_fg">&nbsp;</div>
+            </div>
+            <h4>Readings</h4>
+            <span style="color: #a2a2a2" id="kanji_r_count">0 / 0</span>
+            <div class="progress_bg">
+              <div id="krsl" class="progress_fg">&nbsp;</div>
+            </div>
+          </td>
+          <td class="tv" style="padding: 5px">
+            <h4>Meanings</h4>
+            <span style="color: #a2a2a2" id="vocab_r_count">0 / 0</span>
+            <div class="progress_bg">
+              <div id="vmsl" class="progress_fg">&nbsp;</div>
+            </div>
+            <h4>Readings</h4>
+            <span style="color: #a2a2a2" id="vocab_m_count">0 / 0</span>
+            <div class="progress_bg">
+              <div id="vrsl" class="progress_fg">&nbsp;</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+`);
+
+  $(l.children[1]).after(table);
+
+  if (stats.total_done == 0) $("#statistics").remove();
+
+  if (stats.total_radicals == 0) $(".tr").remove();
+  if (stats.total_kanji == 0) $(".tk").remove();
+  if (stats.total_vocab == 0) $(".tv").remove();
+
+  $("#ta").text(stats.total_done);
+  $("#tc").text(stats.total_correct);
+  $("#radical_count").text(
+    stats.correct_radicals + " / " + stats.total_radicals
+  );
+  $("#kanji_m_count").text(stats.correct_kanji_m + " / " + stats.total_kanji_m);
+  $("#vocab_m_count").text(stats.correct_vocab_m + " / " + stats.total_vocab_m);
+
+  $("#kanji_r_count").text(stats.correct_kanji_r + " / " + stats.total_kanji_r);
+  $("#vocab_r_count").text(stats.correct_vocab_r + " / " + stats.total_vocab_r);
+
+  if (stats.total_radicals != 0)
+    $("#rsl").css(
+      "width",
+      (stats.correct_radicals / stats.total_radicals) * 100 + "%"
+    );
+
+  if (stats.total_kanji != 0) {
+    $("#kmsl").css(
+      "width",
+      (stats.correct_kanji_m / stats.total_kanji_m) * 100 + "%"
+    );
+    $("#krsl").css(
+      "width",
+      (stats.correct_kanji_r / stats.total_kanji_r) * 100 + "%"
+    );
+  }
+
+  if (stats.total_vocab != 0) {
+    $("#vmsl").css(
+      "width",
+      (stats.correct_vocab_m / stats.total_vocab_m) * 100 + "%"
+    );
+    $("#vrsl").css(
+      "width",
+      (stats.correct_vocab_r / stats.total_vocab_r) * 100 + "%"
+    );
+  }
 }
 
 function lesson_not_complete() {
@@ -69,81 +243,94 @@ function lesson_not_complete() {
 
   af.childNodes[1].childNodes[1].childNodes[3].addEventListener(
     "mouseup",
-    complete_item
+    function () {
+      setTimeout(complete_item, 100);
+    }
   );
   document.addEventListener(
     "keyup",
-    (e) => {
+    function (e) {
       if (e.key == "Enter") {
-        complete_item();
+        setTimeout(complete_item, 100);
       }
     },
     true
   );
 }
 
-function complete_item() {
+async function complete_item() {
   var ur = document.getElementById("user-response");
   var fs = ur.parentElement;
 
   var ic = fs.classList.contains("incorrect");
   var yc = fs.classList.contains("correct");
-  var ha = ic || yc;
+  var has_answer = ic || yc;
 
-  if (!ha) {
+  var a = answered;
+  if (answered) {
+    answered = false;
+  }
+
+  if (!has_answer) {
     return;
   }
 
-  if (itemcompleted) {
-    itemcompleted = false;
+  if (a) {
     return;
   }
+  answered = true;
+
+  console.log("updated stats");
 
   var ip = document
     .getElementById("question-type")
     .classList.contains("reading");
 
-  stats.total_done += 1;
+  stats.total_done++;
   var t = document.getElementById("character").classList[0];
 
   switch (t) {
     case "vocabulary":
-      stats.total_vocabulary += 1;
+      stats.total_vocab++;
+      if (ip) stats.total_vocab_r++;
+      else stats.total_vocab_m++;
       break;
     case "kanji":
-      stats.total_kanji += 1;
+      stats.total_kanji++;
+      if (ip) stats.total_kanji_r++;
+      else stats.total_kanji_m++;
       break;
     case "radical":
-      stats.total_radicals += 1;
+      stats.total_radicals++;
       break;
   }
 
-  if (ip) {
-    stats.total_readings += 1;
-  } else {
-    stats.total_translations += 1;
-  }
+  if (ip) stats.total_readings++;
+  else if (t != "radical") stats.total_meanings++;
 
   if (!ic) {
+    stats.total_correct++;
+
+    var pf = ip ? "_r" : "_m";
+
     switch (t) {
       case "vocabulary":
-        stats.correct_vocabulary += 1;
+        stats["correct_vocab" + pf]++;
         break;
       case "kanji":
-        stats.correct_kanji += 1;
+        stats["correct_kanji" + pf]++;
         break;
       case "radical":
-        stats.correct_radicals += 1;
+        stats["correct_radicals"]++;
         break;
     }
 
     if (ip) {
-      stats.correct_readings += 1;
+      stats.correct_readings++;
     } else {
-      stats.correct_meanings += 1;
+      stats.correct_meanings++;
     }
   } else {
   }
   sessionStorage.setItem("statsscript", JSON.stringify(stats));
-  itemcompleted = true;
 }
