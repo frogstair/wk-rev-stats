@@ -6,6 +6,8 @@ This userscript will display information about your latest review session, such 
 
 Simply follow the [instructions](https://community.wanikani.com/t/visual-guide-on-how-to-install-a-userscript/12136) on the WaniKani community forums.
 
+[GREASYFORK](https://greasyfork.org/en/scripts/428204-wanikani-review-stats)
+
 ## Screenshot
 
 ![Screenshot of the script working](scr/1.png)
