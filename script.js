@@ -11,9 +11,16 @@
 // ==/UserScript==
 
 var incorrect = {
-  radicals: {},
-  kanji: {},
-  vocabulary: {},
+  reading: {
+    radical: {},
+    kanji: {},
+    vocabulary: {},
+  },
+  meaning: {
+    radical: {},
+    kanji: {},
+    vocabulary: {},
+  },
 };
 
 var stats = {
@@ -93,6 +100,17 @@ function lesson_complete() {
 
   $("head").append(
     $(`<style>
+
+    table {
+      width: 100%;
+      text-align: center;
+      table-layout: fixed;
+    }
+
+    td {
+      padding: 5px;
+    }
+
     info_icon {
       margin-left: -0.1em;
       margin-right: 0.2em;
@@ -107,7 +125,7 @@ function lesson_complete() {
 
     div.progress_fg {
       background-color: #08c66c;
-      width: 50%;
+      width: 0%;
       border-radius: inherit;
     }
 
@@ -120,6 +138,7 @@ function lesson_complete() {
 
     h3.table-head {
       margin: 0.3em !important;
+      border-bottom: none !important;
     }
   </style>`)
   );
@@ -139,7 +158,7 @@ function lesson_complete() {
       <h3>
         <span>Total correct: <strong id="tc"></strong></span>
       </h3>
-      <table style="width: 100%; text-align: center; table-layout: fixed">
+      <table>
         <tr>
           <th class="tr">
             <h3 class="table-head">Radicals</h3>
@@ -152,13 +171,13 @@ function lesson_complete() {
           </th>
         </tr>
         <tr>
-          <td class="tr" style="padding: -100px 5px 0px 5px">
+          <td class="tr">
             <span style="color: #a2a2a2" id="radical_count">0 / 0</span>
             <div class="progress_bg">
               <div id="rsl" class="progress_fg">&nbsp;</div>
             </div>
           </td>
-          <td class="tk" style="padding: 5px">
+          <td class="tk">
             <h4>Meanings</h4>
             <span style="color: #a2a2a2" id="kanji_m_count">0 / 0</span>
             <div class="progress_bg">
@@ -170,7 +189,7 @@ function lesson_complete() {
               <div id="krsl" class="progress_fg">&nbsp;</div>
             </div>
           </td>
-          <td class="tv" style="padding: 5px">
+          <td class="tv">
             <h4>Meanings</h4>
             <span style="color: #a2a2a2" id="vocab_r_count">0 / 0</span>
             <div class="progress_bg">
@@ -214,27 +233,30 @@ function lesson_complete() {
       (stats.correct_radicals / stats.total_radicals) * 100 + "%"
     );
 
-  if (stats.total_kanji != 0) {
+  if (stats.total_kanji_m != 0)
     $("#kmsl").css(
       "width",
       (stats.correct_kanji_m / stats.total_kanji_m) * 100 + "%"
     );
+
+  if (stats.total_kanji_r != 0) 
     $("#krsl").css(
       "width",
       (stats.correct_kanji_r / stats.total_kanji_r) * 100 + "%"
     );
-  }
+  
 
-  if (stats.total_vocab != 0) {
+  if (stats.total_vocab_m != 0)
     $("#vmsl").css(
       "width",
       (stats.correct_vocab_m / stats.total_vocab_m) * 100 + "%"
     );
+
+  if (stats.total_vocab_r != 0)
     $("#vrsl").css(
       "width",
       (stats.correct_vocab_r / stats.total_vocab_r) * 100 + "%"
     );
-  }
 }
 
 function lesson_not_complete() {
@@ -258,7 +280,7 @@ function lesson_not_complete() {
   );
 }
 
-async function complete_item() {
+function complete_item() {
   var ur = document.getElementById("user-response");
   var fs = ur.parentElement;
 
@@ -266,28 +288,31 @@ async function complete_item() {
   var yc = fs.classList.contains("correct");
   var has_answer = ic || yc;
 
+  var t = document.getElementById("character").classList[0];
+  var ip = document
+    .getElementById("question-type")
+    .classList.contains("reading");
+  
+  var category = ip ? "reading" : "meaning";
+  var char = $("#character").children().first().text()
+  if (incorrect[category][t][char])
+    return;
+
   var a = answered;
-  if (answered) {
+  if (answered)
     answered = false;
-  }
 
-  if (!has_answer) {
+  if (!has_answer)
     return;
-  }
 
-  if (a) {
+  if (a)
     return;
-  }
   answered = true;
 
   console.log("updated stats");
 
-  var ip = document
-    .getElementById("question-type")
-    .classList.contains("reading");
 
   stats.total_done++;
-  var t = document.getElementById("character").classList[0];
 
   switch (t) {
     case "vocabulary":
@@ -325,12 +350,12 @@ async function complete_item() {
         break;
     }
 
-    if (ip) {
+    if (ip)
       stats.correct_readings++;
-    } else {
+    else
       stats.correct_meanings++;
-    }
-  } else {
-  }
+  } else
+    incorrect[t][char] = true;
+  
   sessionStorage.setItem("statsscript", JSON.stringify(stats));
 }
