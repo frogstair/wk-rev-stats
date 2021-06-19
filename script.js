@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Review Stats
 // @namespace    https://github.com/frogstair
-// @version      0.1
+// @version      1.0
 // @description  Show some extra statistics about your latest WaniKani review session
 // @author       frogstair
 // @match        https://www.wanikani.com/review
