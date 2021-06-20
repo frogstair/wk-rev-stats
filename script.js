@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Review Stats
 // @namespace    https://github.com/frogstair
-// @version      1.0
+// @version      1.2 (unstable)
 // @description  Show some extra statistics about your latest WaniKani review session
 // @author       frogstair
 // @match        https://www.wanikani.com/review
@@ -84,11 +84,11 @@ function attach() {
 }
 
 function lesson_complete() {
-  if (!window.sessionStorage.getItem("wkStats")) {
+  if (!localStorage.getItem("wkStats")) {
     return;
   }
-  stats = JSON.parse(window.sessionStorage.getItem("wkStats"));
-  var summary = document.getElementById("reviews-summary");
+  stats = JSON.parse(localStorage.getItem("wkStats"));
+  var summary = $("#reviews-summary");
 
   $("head").append(
     $(`<style>
@@ -200,7 +200,7 @@ function lesson_complete() {
 </div>
 `);
 
-  $(summary.children[1]).after(table);
+  summary.children().eq(1).after(table);
 
   if (stats.total_done == 0) $("#statistics").remove();
 
@@ -231,12 +231,11 @@ function lesson_complete() {
       (stats.correct_kanji_m / stats.total_kanji_m) * 100 + "%"
     );
 
-  if (stats.total_kanji_r != 0) 
+  if (stats.total_kanji_r != 0)
     $("#krsl").css(
       "width",
       (stats.correct_kanji_r / stats.total_kanji_r) * 100 + "%"
     );
-  
 
   if (stats.total_vocab_m != 0)
     $("#vmsl").css(
@@ -252,52 +251,44 @@ function lesson_complete() {
 }
 
 function lesson_not_complete() {
-  var ansform = document.getElementById("answer-form");
+  var ansform = $("#answer-form");
 
-  ansform.childNodes[1].childNodes[1].childNodes[3].addEventListener(
-    "mouseup",
-    function () {
+  ansform
+    .children()
+    .eq(1)
+    .eq(1)
+    .eq(3)
+    .on("mouseup", function () {
+      setTimeout(complete_item, 100);
+    });
+  $(document).on("keyup", function (e) {
+    if (e.key == "Enter") {
       setTimeout(complete_item, 100);
     }
-  );
-  document.addEventListener(
-    "keyup",
-    function (e) {
-      if (e.key == "Enter") {
-        setTimeout(complete_item, 100);
-      }
-    },
-    true
-  );
+  });
 }
 
 function complete_item() {
-  var response = document.getElementById("user-response");
-  var form = response.parentElement;
+  var response = $("#user-response");
+  var form = response.parent();
 
-  var is_incorrect = form.classList.contains("incorrect");
-  var is_correct = form.classList.contains("correct");
+  var is_incorrect = form.hasClass("incorrect");
+  var is_correct = form.hasClass("correct");
   var has_answer = is_incorrect || is_correct;
 
-  var type = document.getElementById("character").classList[0];
-  var is_reading = document
-    .getElementById("question-type")
-    .classList.contains("reading");
-  
+  var type = $("#character").attr("class").split(/\s+/)[0];
+  var is_reading = $("#question-type").hasClass("reading");
+
   var category = is_reading ? "reading" : "meaning";
-  var char = $("#character").children().first().text()
-  if (incorrect[category][type][char])
-    return;
+  var char = $("#character").children().first().text();
+  if (incorrect[category][type][char]) return;
 
   var a = answered;
-  if (answered)
-    answered = false;
+  if (answered) answered = false;
 
-  if (!has_answer)
-    return;
+  if (!has_answer) return;
 
-  if (a)
-    return;
+  if (a) return;
   answered = true;
 
   stats.total_done++;
@@ -338,12 +329,9 @@ function complete_item() {
         break;
     }
 
-    if (is_reading)
-      stats.correct_readings++;
-    else
-      stats.correct_meanings++;
-  } else
-    incorrect[category][type][char] = true;
-  
-  sessionStorage.setItem("wkStats", JSON.stringify(stats));
+    if (is_reading) stats.correct_readings++;
+    else stats.correct_meanings++;
+  } else incorrect[category][type][char] = true;
+
+  localStorage.setItem("wkStats", JSON.stringify(stats));
 }
