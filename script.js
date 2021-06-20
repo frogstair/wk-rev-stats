@@ -53,16 +53,8 @@ var ready = false;
 var loader = document.getElementById("loading");
 var answered = false;
 
-function sleep(ms) {
-  const dt = Date.now();
-  let cd = null;
-  do {
-    cd = Date.now();
-  } while (cd - dt < ms);
-}
-
-var obs = new MutationObserver((ml) => {
-  ml.forEach((m) => {
+var obs = new MutationObserver((mutrec) => {
+  mutrec.forEach((m) => {
     if (m.attributeName) {
       attach();
     }
@@ -82,8 +74,9 @@ function attach() {
   }
   ready = true;
   obs.disconnect();
-  var l = document.getElementById("reviews-summary");
-  if (l) {
+
+  var summary = document.getElementById("reviews-summary");
+  if (summary) {
     lesson_complete();
   } else {
     lesson_not_complete();
@@ -91,12 +84,11 @@ function attach() {
 }
 
 function lesson_complete() {
-  if (!window.sessionStorage.getItem("statsscript")) {
+  if (!window.sessionStorage.getItem("wkStats")) {
     return;
   }
-  stats = JSON.parse(window.sessionStorage.getItem("statsscript"));
-  console.log("Done with review");
-  var l = document.getElementById("reviews-summary");
+  stats = JSON.parse(window.sessionStorage.getItem("wkStats"));
+  var summary = document.getElementById("reviews-summary");
 
   $("head").append(
     $(`<style>
@@ -208,7 +200,7 @@ function lesson_complete() {
 </div>
 `);
 
-  $(l.children[1]).after(table);
+  $(summary.children[1]).after(table);
 
   if (stats.total_done == 0) $("#statistics").remove();
 
@@ -260,10 +252,9 @@ function lesson_complete() {
 }
 
 function lesson_not_complete() {
-  console.log("Start review/lesson");
-  var af = document.getElementById("answer-form");
+  var ansform = document.getElementById("answer-form");
 
-  af.childNodes[1].childNodes[1].childNodes[3].addEventListener(
+  ansform.childNodes[1].childNodes[1].childNodes[3].addEventListener(
     "mouseup",
     function () {
       setTimeout(complete_item, 100);
@@ -281,21 +272,21 @@ function lesson_not_complete() {
 }
 
 function complete_item() {
-  var ur = document.getElementById("user-response");
-  var fs = ur.parentElement;
+  var response = document.getElementById("user-response");
+  var form = response.parentElement;
 
-  var ic = fs.classList.contains("incorrect");
-  var yc = fs.classList.contains("correct");
-  var has_answer = ic || yc;
+  var is_incorrect = form.classList.contains("incorrect");
+  var is_correct = form.classList.contains("correct");
+  var has_answer = is_incorrect || is_correct;
 
-  var t = document.getElementById("character").classList[0];
-  var ip = document
+  var type = document.getElementById("character").classList[0];
+  var is_reading = document
     .getElementById("question-type")
     .classList.contains("reading");
   
-  var category = ip ? "reading" : "meaning";
+  var category = is_reading ? "reading" : "meaning";
   var char = $("#character").children().first().text()
-  if (incorrect[category][t][char])
+  if (incorrect[category][type][char])
     return;
 
   var a = answered;
@@ -309,20 +300,17 @@ function complete_item() {
     return;
   answered = true;
 
-  console.log("updated stats");
-
-
   stats.total_done++;
 
-  switch (t) {
+  switch (type) {
     case "vocabulary":
       stats.total_vocab++;
-      if (ip) stats.total_vocab_r++;
+      if (is_reading) stats.total_vocab_r++;
       else stats.total_vocab_m++;
       break;
     case "kanji":
       stats.total_kanji++;
-      if (ip) stats.total_kanji_r++;
+      if (is_reading) stats.total_kanji_r++;
       else stats.total_kanji_m++;
       break;
     case "radical":
@@ -330,15 +318,15 @@ function complete_item() {
       break;
   }
 
-  if (ip) stats.total_readings++;
-  else if (t != "radical") stats.total_meanings++;
+  if (is_reading) stats.total_readings++;
+  else if (type != "radical") stats.total_meanings++;
 
-  if (!ic) {
+  if (!is_incorrect) {
     stats.total_correct++;
 
-    var pf = ip ? "_r" : "_m";
+    var pf = is_reading ? "_r" : "_m";
 
-    switch (t) {
+    switch (type) {
       case "vocabulary":
         stats["correct_vocab" + pf]++;
         break;
@@ -346,16 +334,16 @@ function complete_item() {
         stats["correct_kanji" + pf]++;
         break;
       case "radical":
-        stats["correct_radicals"]++;
+        stats.correct_radicals++;
         break;
     }
 
-    if (ip)
+    if (is_reading)
       stats.correct_readings++;
     else
       stats.correct_meanings++;
   } else
-    incorrect[t][char] = true;
+    incorrect[category][type][char] = true;
   
-  sessionStorage.setItem("statsscript", JSON.stringify(stats));
+  sessionStorage.setItem("wkStats", JSON.stringify(stats));
 }
