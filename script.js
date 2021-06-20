@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaniKani Review Stats
 // @namespace    https://github.com/frogstair
-// @version      1.2 (unstable)
+// @version      1.2
 // @description  Show some extra statistics about your latest WaniKani review session
 // @author       frogstair
 // @match        https://www.wanikani.com/review
@@ -183,12 +183,12 @@ function lesson_complete() {
           </td>
           <td class="tv">
             <h4>Meanings</h4>
-            <span style="color: #a2a2a2" id="vocab_r_count">0 / 0</span>
+            <span style="color: #a2a2a2" id="vocab_m_count">0 / 0</span>
             <div class="progress_bg">
               <div id="vmsl" class="progress_fg">&nbsp;</div>
             </div>
             <h4>Readings</h4>
-            <span style="color: #a2a2a2" id="vocab_m_count">0 / 0</span>
+            <span style="color: #a2a2a2" id="vocab_r_count">0 / 0</span>
             <div class="progress_bg">
               <div id="vrsl" class="progress_fg">&nbsp;</div>
             </div>
